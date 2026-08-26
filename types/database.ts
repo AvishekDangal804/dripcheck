@@ -34,6 +34,7 @@ export interface LeaderboardEntry {
 
 export interface RankedLeaderboardEntry extends LeaderboardEntry {
   rank: number;
+  style: string | null;
 }
 
 export interface Outfit {

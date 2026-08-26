@@ -51,8 +51,10 @@ create index idx_leaderboard_entries_score on leaderboard_entries (score desc);
 create view daily_leaderboard_view as
 select
   le.*,
+  fc.style,
   rank() over (order by le.score desc, le.created_at asc) as rank
 from leaderboard_entries le
+join fit_checks fc on fc.id = le.fit_check_id
 where le.created_at::date = (now() at time zone 'utc')::date;
 
 -- ── outfits (Discover feed) ─────────────────────────────────────────────

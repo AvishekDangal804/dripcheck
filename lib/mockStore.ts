@@ -119,7 +119,11 @@ export const mockStore = {
     return getDb()
       .leaderboardEntries.filter((entry) => isToday(entry.created_at))
       .sort((a, b) => b.score - a.score || (a.created_at < b.created_at ? -1 : 1))
-      .map((entry, index) => ({ ...entry, rank: index + 1 }));
+      .map((entry, index) => ({
+        ...entry,
+        rank: index + 1,
+        style: getDb().fitChecks.find((fc) => fc.id === entry.fit_check_id)?.style ?? null,
+      }));
   },
 
   getFitCheckById(id: string): FitCheck | undefined {

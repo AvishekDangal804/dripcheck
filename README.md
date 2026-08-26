@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DripCheck
 
-## Getting Started
+**Step in. Get scored. Own the vibe.**
 
-First, run the development server:
+An AI-powered fashion check built for Itahari International College (IIC) students. Step in front of the camera, get a Drip Score built only from what's actually visible, and see how your fit stacks up on today's leaderboard.
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The app runs out of the box with **no environment variables required** — it uses an in-process mock data store (`lib/mockStore.ts`) and a mock AI analyzer (`services/ai/providers/mock.ts`), so the full loop (Live Fit Check, leaderboard, Top 3, Discover) works immediately for local development or a showcase demo.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Connecting real services
 
-## Learn More
+Copy `.env.example` to `.env.local` and fill in:
 
-To learn more about Next.js, take a look at the following resources:
+- **Supabase** (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) — run `supabase/schema.sql`, then `supabase/policies.sql`, then `supabase/storage.sql` (and optionally `supabase/seed.sql`) in the Supabase SQL editor, in that order.
+- **AI vision provider** (`AI_PROVIDER=gemini` + `GEMINI_API_KEY`) — outfit analysis is currently implemented for Gemini; OpenAI/Anthropic are stubbed behind the same interface in `services/ai/providers/` for future use.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+No code changes are needed to switch modes — every data access goes through `lib/repositories/*`, which branch on whether Supabase is configured.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project structure
 
-## Deploy on Vercel
+- `app/` — routes and API handlers (App Router)
+- `components/` — UI, grouped by feature area (`home/`, `live/`, `wear-today/`, `discover/`, `leaderboard/`, `about/`, `auth/`, `ui/`)
+- `hooks/` — camera, framing detection, fullscreen, countdown, and the Live Fit Check state machine
+- `services/ai/` — the vision provider abstraction and the visibility-aware analysis contract
+- `services/outfits/` — the "What Can I Wear Today" vibe templates
+- `lib/` — Supabase clients, the mock-mode data repositories, scoring, validation
+- `supabase/` — SQL schema, RLS policies, storage setup, seed data
+- `types/` — shared TypeScript types matching the database and AI contract
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — start the dev server
+- `npm run build` — production build
+- `npm run lint` — ESLint

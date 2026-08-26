@@ -21,6 +21,21 @@ export async function insertFitCheck(
   return row as FitCheck;
 }
 
+export async function listFitChecksByUser(userId: string): Promise<FitCheck[]> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  const { data, error } = await getSupabaseAdminClient()
+    .from("fit_checks")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(`Failed to load fit check history: ${error.message}`);
+  return (data ?? []) as FitCheck[];
+}
+
 export async function getFitCheckById(id: string): Promise<FitCheck | null> {
   if (!isSupabaseConfigured()) {
     return mockStore.getFitCheckById(id) ?? null;

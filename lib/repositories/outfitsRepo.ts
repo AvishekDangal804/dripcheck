@@ -1,6 +1,7 @@
 import "server-only";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { mockStore } from "@/lib/mockStore";
 import type { Outfit } from "@/types/database";
 import type { DiscoverTab } from "@/types/outfit";
@@ -30,4 +31,17 @@ export async function listOutfits(tab: DiscoverTab): Promise<Outfit[]> {
   const { data, error } = await getSupabaseAdminClient().from("outfits").select("*");
   if (error) throw new Error(`Failed to load outfits: ${error.message}`);
   return sortForTab((data ?? []) as Outfit[], tab);
+}
+
+// Uses the cookie-bound client, not admin — RLS ("users read their own
+// saves") is what scopes this to the signed-in user, so there's no need to
+// pass/trust a userId from the caller.
+export async function listSavedOutfitsForCurrentUser(): Promise<Outfit[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.from("saved_outfits").select("outfit:outfits(*)");
+  if (error) throw new Error(`Failed to load saved outfits: ${error.message}`);
+
+  return ((data ?? []) as unknown as { outfit: Outfit }[]).map((row) => row.outfit).filter(Boolean);
 }
