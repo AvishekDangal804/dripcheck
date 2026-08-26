@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  /* Base editorial palette — warm, restrained, no dark mode: this is a
+     fashion editorial site, not a SaaS dashboard, and the brief explicitly
+     avoids black backgrounds and neon/glassmorphism treatments. */
+  --color-ivory: #faf6f0;
+  --color-warm-white: #fffdfb;
+  --color-beige: #ece2d3;
+  --color-stone: #d9cfc0;
+  --color-charcoal: #332c25;
+  --color-near-black: #1c1712;
+
+  /* Single accent: warm brown, used consistently for CTAs, highlights,
+     and small accent details rather than mixing multiple strong colors. */
+  --color-accent-50: #f6ede4;
+  --color-accent-200: #dcb894;
+  --color-accent-400: #b17c4c;
+  --color-accent-500: #8f5f36;
+  --color-accent-600: #74492a;
+  --color-accent-700: #573620;
+
+  --font-display: "Fraunces", "Georgia", serif;
+  --font-body: "Inter", "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background: var(--color-ivory);
+  color: var(--color-near-black);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+}
+
+::selection {
+  background: var(--color-accent-200);
+  color: var(--color-near-black);
+}
