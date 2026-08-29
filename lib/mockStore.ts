@@ -1,5 +1,5 @@
 import "server-only";
-import type { FitCheck, LeaderboardEntry, Outfit, RankedLeaderboardEntry } from "@/types/database";
+import type { FitCheck, LeaderboardEntry, Outfit, RankedLeaderboardEntry, Streak } from "@/types/database";
 
 // In-process fallback data store, used only when isSupabaseConfigured() is
 // false (lib/env.ts). Lets the whole app — leaderboard, Top 3, Discover —
@@ -69,6 +69,7 @@ interface MockDb {
   fitChecks: FitCheck[];
   leaderboardEntries: LeaderboardEntry[];
   outfits: Outfit[];
+  streaks: Record<string, Streak>;
 }
 
 const globalForMockStore = globalThis as unknown as { __dripcheckMockDb?: MockDb };
@@ -79,6 +80,7 @@ function getDb(): MockDb {
       fitChecks: [],
       leaderboardEntries: [],
       outfits: seedOutfits(),
+      streaks: {},
     };
   }
   return globalForMockStore.__dripcheckMockDb;
@@ -132,5 +134,18 @@ export const mockStore = {
 
   listOutfits(): Outfit[] {
     return getDb().outfits;
+  },
+
+  getStreak(userId: string): Streak | null {
+    return getDb().streaks[userId] ?? null;
+  },
+
+  saveStreak(streak: Streak): Streak {
+    getDb().streaks[streak.user_id] = streak;
+    return streak;
+  },
+
+  getUserFitChecks(userId: string): FitCheck[] {
+    return getDb().fitChecks.filter((fc) => fc.user_id === userId);
   },
 };

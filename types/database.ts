@@ -22,6 +22,27 @@ export interface FitCheck {
   is_public: boolean;
   source: FitCheckSource;
   created_at: string;
+  // Denormalised per-category scores (migration 002). NULL when the
+  // category was not visible — never 0.
+  top_score?: number | null;
+  bottom_score?: number | null;
+  shoes_score?: number | null;
+  accessories_score?: number | null;
+  color_score?: number | null;
+}
+
+export interface Streak {
+  user_id: string;
+  current_streak: number;
+  longest_streak: number;
+  last_check_date: string | null;
+  updated_at: string;
+}
+
+export interface UserFitStats {
+  total: number;
+  best: number | null;
+  average: number | null;
 }
 
 export interface LeaderboardEntry {

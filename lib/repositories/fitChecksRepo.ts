@@ -2,7 +2,7 @@ import "server-only";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { mockStore } from "@/lib/mockStore";
-import type { FitCheck } from "@/types/database";
+import type { FitCheck, UserFitStats } from "@/types/database";
 
 export async function insertFitCheck(
   data: Omit<FitCheck, "id" | "created_at">
@@ -23,7 +23,7 @@ export async function insertFitCheck(
 
 export async function listFitChecksByUser(userId: string): Promise<FitCheck[]> {
   if (!isSupabaseConfigured()) {
-    return [];
+    return mockStore.getUserFitChecks(userId);
   }
 
   const { data, error } = await getSupabaseAdminClient()
@@ -34,6 +34,16 @@ export async function listFitChecksByUser(userId: string): Promise<FitCheck[]> {
 
   if (error) throw new Error(`Failed to load fit check history: ${error.message}`);
   return (data ?? []) as FitCheck[];
+}
+
+export async function getUserFitStats(userId: string): Promise<UserFitStats> {
+  const checks = await listFitChecksByUser(userId);
+  if (checks.length === 0) return { total: 0, best: null, average: null };
+
+  const scores = checks.map((c) => c.score);
+  const best = Math.max(...scores);
+  const average = Math.round((scores.reduce((s, v) => s + v, 0) / scores.length) * 10) / 10;
+  return { total: checks.length, best, average };
 }
 
 export async function getFitCheckById(id: string): Promise<FitCheck | null> {

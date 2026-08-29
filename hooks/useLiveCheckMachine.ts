@@ -8,6 +8,7 @@ export interface AnalyzeFitResult {
   fitCheck: { id: string; imageUrl: string };
   analysis: FitAnalysis;
   leaderboard: { rank: number | null; top3: RankedLeaderboardEntry[] };
+  streak?: { current: number; longest: number } | null;
 }
 
 type Phase =
