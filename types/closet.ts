@@ -68,3 +68,52 @@ export interface NewClosetItem {
   style: string | null;
   pattern: string | null;
 }
+
+// ── Create-a-Fit ─────────────────────────────────────────────────────────
+
+export type OutfitSlot = "top" | "bottom" | "shoes" | "outerwear" | "accessory";
+
+export type OutfitOccasion =
+  | "college"
+  | "regular-day"
+  | "date"
+  | "summer"
+  | "spring"
+  | "party"
+  | "concert"
+  | "casual-hangout"
+  | "formal-event"
+  | "night-out";
+
+export const OUTFIT_OCCASIONS: { key: OutfitOccasion; label: string }[] = [
+  { key: "college", label: "College" },
+  { key: "regular-day", label: "Regular Day" },
+  { key: "date", label: "Date" },
+  { key: "summer", label: "Summer" },
+  { key: "spring", label: "Spring" },
+  { key: "party", label: "Party" },
+  { key: "concert", label: "Concert" },
+  { key: "casual-hangout", label: "Casual Hangout" },
+  { key: "formal-event", label: "Formal Event" },
+  { key: "night-out", label: "Night Out" },
+];
+
+export function isOutfitOccasion(v: unknown): v is OutfitOccasion {
+  return typeof v === "string" && OUTFIT_OCCASIONS.some((o) => o.key === v);
+}
+
+export interface GeneratedOutfitItem {
+  item: ClosetItem;
+  slot: OutfitSlot;
+}
+
+export interface GeneratedOutfit {
+  id?: string;
+  name: string;
+  vibe: string | null;
+  occasion: string | null;
+  palette: string[];
+  compatibility: number;
+  rationale: string;
+  items: GeneratedOutfitItem[];
+}

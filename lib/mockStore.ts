@@ -1,6 +1,6 @@
 import "server-only";
 import type { FitCheck, LeaderboardEntry, Outfit, RankedLeaderboardEntry, Streak } from "@/types/database";
-import type { ClosetItem, NewClosetItem } from "@/types/closet";
+import type { ClosetItem, NewClosetItem, GeneratedOutfit } from "@/types/closet";
 
 // In-process fallback data store, used only when isSupabaseConfigured() is
 // false (lib/env.ts). Lets the whole app — leaderboard, Top 3, Discover —
@@ -72,6 +72,7 @@ interface MockDb {
   outfits: Outfit[];
   streaks: Record<string, Streak>;
   closetItems: ClosetItem[];
+  generatedOutfits: (GeneratedOutfit & { user_id: string })[];
 }
 
 const globalForMockStore = globalThis as unknown as { __dripcheckMockDb?: MockDb };
@@ -84,6 +85,7 @@ function getDb(): MockDb {
       outfits: seedOutfits(),
       streaks: {},
       closetItems: [],
+      generatedOutfits: [],
     };
   }
   return globalForMockStore.__dripcheckMockDb;
@@ -176,5 +178,15 @@ export const mockStore = {
   deleteClosetItem(id: string, userId: string): void {
     const db = getDb();
     db.closetItems = db.closetItems.filter((i) => !(i.id === id && i.user_id === userId));
+  },
+
+  saveGeneratedOutfit(userId: string, outfit: GeneratedOutfit): GeneratedOutfit {
+    const record = { ...outfit, id: crypto.randomUUID(), user_id: userId };
+    getDb().generatedOutfits.unshift(record);
+    return record;
+  },
+
+  listGeneratedOutfits(userId: string): GeneratedOutfit[] {
+    return getDb().generatedOutfits.filter((o) => o.user_id === userId);
   },
 };

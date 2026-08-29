@@ -1,23 +1,22 @@
 import { PageShell } from "@/components/layout/PageShell";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { Button } from "@/components/ui/Button";
-import { ClosetView } from "@/components/closet/ClosetView";
+import { CreateAFitView } from "@/components/closet/CreateAFitView";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { listCloset } from "@/lib/repositories/closetRepo";
-import { CLOSET_AI_IS_REAL } from "@/services/closet/identifyItem";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClosetPage() {
+export default async function CreateAFitPage() {
   if (!isSupabaseConfigured()) {
     return (
       <PageShell className="py-24 text-center">
         <EditorialHeading as="h1" className="text-center">
-          Closet needs an account
+          Create a Fit needs an account
         </EditorialHeading>
         <p className="mx-auto mt-4 max-w-sm text-near-black/70">
-          Your closet is private to you, so it needs a signed-in account and a connected database.
+          This builds outfits from clothes you&rsquo;ve added to your closet, so it needs a signed-in account.
         </p>
         <Button href="/live" size="lg" className="mt-6">
           Try Live Fit Check
@@ -33,7 +32,7 @@ export default async function ClosetPage() {
     return (
       <PageShell className="py-24 text-center">
         <EditorialHeading as="h1" className="text-center">
-          Sign in to open your closet
+          Sign in to build fits
         </EditorialHeading>
         <div className="mt-6 flex justify-center gap-3">
           <Button href="/login" size="lg">
@@ -47,26 +46,22 @@ export default async function ClosetPage() {
     );
   }
 
-  const items = await listCloset(data.user.id);
+  const closet = await listCloset(data.user.id);
+  const hasTop = closet.some((i) => i.category === "tshirt" || i.category === "shirt");
+  const hasBottom = closet.some((i) => i.category === "pants" || i.category === "jeans" || i.category === "shorts");
 
   return (
     <PageShell className="py-14 md:py-20">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <EditorialHeading eyebrow="My Closet" as="h1">
-            The clothes you actually own.
-          </EditorialHeading>
-          <p className="mt-3 max-w-md text-near-black/60">
-            Add photos of your pieces. DripCheck tags each one and builds fits using only what&rsquo;s in here.
-          </p>
-        </div>
-        <Button href="/create-a-fit" variant="secondary" className="shrink-0">
-          Create a Fit
-        </Button>
-      </div>
+      <EditorialHeading eyebrow="Create a Fit" as="h1">
+        Build a fit from your closet.
+      </EditorialHeading>
+      <p className="mt-3 max-w-md text-near-black/60">
+        Every combination uses only clothes you&rsquo;ve added. Pick a vibe or an occasion and DripCheck puts the
+        pieces together.
+      </p>
 
       <div className="mt-10">
-        <ClosetView initialItems={items} aiReal={CLOSET_AI_IS_REAL} />
+        <CreateAFitView hasClosetBasics={hasTop && hasBottom} />
       </div>
     </PageShell>
   );

@@ -11,6 +11,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { listFitChecksByUser, getUserFitStats } from "@/lib/repositories/fitChecksRepo";
 import { getStreakForCurrentUser } from "@/lib/repositories/streaksRepo";
 import { listSavedOutfitsForCurrentUser } from "@/lib/repositories/outfitsRepo";
+import { listSavedOutfits } from "@/lib/repositories/generatedOutfitsRepo";
 
 // Per-user data behind auth cookies — always render per request.
 export const dynamic = "force-dynamic";
@@ -55,11 +56,12 @@ export default async function ProfilePage() {
   }
 
   const displayName = (data.user.user_metadata?.display_name as string | undefined) || data.user.email || "You";
-  const [history, saved, stats, streak] = await Promise.all([
+  const [history, saved, stats, streak, createdFits] = await Promise.all([
     listFitChecksByUser(data.user.id),
     listSavedOutfitsForCurrentUser(),
     getUserFitStats(data.user.id),
     getStreakForCurrentUser(),
+    listSavedOutfits(data.user.id),
   ]);
 
   const statCards: { label: string; value: string }[] = [
@@ -103,6 +105,33 @@ export default async function ProfilePage() {
                 <span className="text-near-black">{fitCheck.style ?? "Fit Check"}</span>
                 <span className="text-sm text-near-black/40">{formatTime(fitCheck.created_at)}</span>
                 <ScoreBadge score={fitCheck.score} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="mt-12">
+        <p className="mb-4 text-xs uppercase tracking-[0.2em] text-accent-500">Your Created Fits</p>
+        {createdFits.length === 0 ? (
+          <p className="text-near-black/50">
+            None yet — build one on{" "}
+            <a href="/create-a-fit" className="text-accent-600 underline">
+              Create a Fit
+            </a>
+            .
+          </p>
+        ) : (
+          <ul className="divide-y divide-stone/60 border-y border-stone/60">
+            {createdFits.map((fit) => (
+              <li key={fit.id} className="flex items-center justify-between gap-4 py-3">
+                <div>
+                  <span className="text-near-black">{fit.name}</span>
+                  <span className="ml-2 text-xs uppercase tracking-wide text-near-black/40">
+                    {fit.items.length} pieces
+                  </span>
+                </div>
+                <ScoreBadge score={fit.compatibility} />
               </li>
             ))}
           </ul>

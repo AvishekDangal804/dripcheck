@@ -6,6 +6,7 @@ export const NAV_LINKS = [
   { href: "/live", label: "Live Check" },
   { href: "/wear-today", label: "What Can I Wear?" },
   { href: "/closet", label: "My Closet" },
+  { href: "/create-a-fit", label: "Create a Fit" },
   { href: "/discover", label: "Discover" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/about", label: "About" },
