@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { ScoreBadge } from "@/components/ui/ScoreBadge";
+import { GeneratedOutfitCard } from "@/components/closet/GeneratedOutfitCard";
 import { OUTFIT_OCCASIONS, type GeneratedOutfit, type OutfitOccasion } from "@/types/closet";
 
 const VIBES: { key: string; label: string }[] = [
@@ -45,13 +45,11 @@ export function CreateAFitView({ hasClosetBasics }: { hasClosetBasics: boolean }
   const [reason, setReason] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedKeys, setSavedKeys] = useState<Set<number>>(new Set());
 
   async function generate() {
     setBusy(true);
     setError(null);
     setReason(null);
-    setSavedKeys(new Set());
     try {
       const res = await fetch("/api/create-a-fit", {
         method: "POST",
@@ -66,29 +64,6 @@ export function CreateAFitView({ hasClosetBasics }: { hasClosetBasics: boolean }
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function save(outfit: GeneratedOutfit, index: number) {
-    try {
-      const res = await fetch("/api/create-a-fit/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: outfit.name,
-          vibe: outfit.vibe,
-          occasion: outfit.occasion,
-          palette: outfit.palette,
-          compatibility: outfit.compatibility,
-          rationale: outfit.rationale,
-          items: outfit.items.map((i) => ({ closetItemId: i.item.id, slot: i.slot })),
-        }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Couldn't save that fit.");
-      setSavedKeys((prev) => new Set(prev).add(index));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't save that fit.");
     }
   }
 
@@ -145,56 +120,7 @@ export function CreateAFitView({ hasClosetBasics }: { hasClosetBasics: boolean }
       {outfits && outfits.length > 0 && (
         <div className="mt-10 grid gap-6 md:grid-cols-2">
           {outfits.map((outfit, i) => (
-            <article key={i} className="rounded-sm border border-stone/60 bg-ivory p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-display text-lg text-near-black">{outfit.name}</p>
-                  <p className="text-xs uppercase tracking-wide text-accent-500">
-                    {[outfit.vibe, outfit.occasion?.replace(/-/g, " ")].filter(Boolean).join(" · ")}
-                  </p>
-                </div>
-                <ScoreBadge score={outfit.compatibility} />
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-                {outfit.items.map(({ item, slot }) => (
-                  <div key={item.id} className="w-20">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.image_url}
-                      alt={item.name}
-                      className="aspect-square w-full rounded-sm border border-stone/50 object-cover"
-                    />
-                    <p className="mt-1 text-[10px] uppercase tracking-wide text-near-black/45">{slot}</p>
-                    <p className="line-clamp-1 text-[11px] text-near-black/70">{item.name}</p>
-                  </div>
-                ))}
-              </div>
-
-              {outfit.palette.length > 0 && (
-                <div className="mt-4 flex items-center gap-2">
-                  {outfit.palette.map((c) => (
-                    <span
-                      key={c}
-                      title={c}
-                      className="h-4 w-4 rounded-full border border-stone/50"
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              <p className="mt-4 text-sm text-near-black/70">{outfit.rationale}</p>
-
-              <Button
-                onClick={() => save(outfit, i)}
-                variant="secondary"
-                className="mt-4"
-                disabled={savedKeys.has(i)}
-              >
-                {savedKeys.has(i) ? "Saved ✓" : "Save Fit"}
-              </Button>
-            </article>
+            <GeneratedOutfitCard key={i} outfit={outfit} />
           ))}
         </div>
       )}

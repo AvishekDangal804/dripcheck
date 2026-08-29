@@ -1,49 +1,34 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { PageShell } from "@/components/layout/PageShell";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
-import { VibePicker } from "@/components/wear-today/VibePicker";
-import { RandomRevealAnimation } from "@/components/wear-today/RandomRevealAnimation";
-import { OutfitTemplateReveal } from "@/components/wear-today/OutfitTemplateReveal";
-import { getTemplate, pickRandomVibe, type OutfitTemplate } from "@/services/outfits/vibeTemplates";
+import { WearTodayTemplates } from "@/components/wear-today/WearTodayTemplates";
+import { WearTodayFromCloset } from "@/components/wear-today/WearTodayFromCloset";
+import { isSupabaseConfigured } from "@/lib/env";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { listCloset } from "@/lib/repositories/closetRepo";
 
-type ViewState = { mode: "picker" } | { mode: "revealing"; template: OutfitTemplate } | { mode: "result"; template: OutfitTemplate };
+export const dynamic = "force-dynamic";
 
-export default function WearTodayPage() {
-  const [view, setView] = useState<ViewState>({ mode: "picker" });
+export default async function WearTodayPage() {
+  let closetMode = false;
 
-  // A vibe card click doesn't navigate, so without this the page keeps
-  // whatever scroll position it had, which can leave the reveal content
-  // starting underneath the sticky navbar.
-  useEffect(() => {
-    window.scrollTo({ top: 0 });
-  }, [view.mode]);
+  if (isSupabaseConfigured()) {
+    const supabase = await getSupabaseServerClient();
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      const closet = await listCloset(data.user.id);
+      const hasTop = closet.some((i) => i.category === "tshirt" || i.category === "shirt");
+      const hasBottom = closet.some((i) => ["pants", "jeans", "shorts"].includes(i.category));
+      closetMode = hasTop && hasBottom;
+    }
+  }
 
   return (
     <PageShell className="py-14 md:py-20">
-      {view.mode === "picker" && (
-        <>
-          <EditorialHeading eyebrow="What Can I Wear Today?" as="h1" className="mb-10 text-center mx-auto">
-            What&rsquo;s your vibe today?
-          </EditorialHeading>
-          <VibePicker
-            onSelect={(vibe) => setView({ mode: "result", template: getTemplate(vibe) })}
-            onRandom={() => setView({ mode: "revealing", template: pickRandomVibe() })}
-          />
-        </>
-      )}
+      <EditorialHeading eyebrow="What Can I Wear Today?" as="h1" className="mb-10 text-center mx-auto">
+        What&rsquo;s your vibe today?
+      </EditorialHeading>
 
-      {view.mode === "revealing" && (
-        <RandomRevealAnimation
-          finalLabel={view.template.label}
-          onDone={() => setView({ mode: "result", template: view.template })}
-        />
-      )}
-
-      {view.mode === "result" && (
-        <OutfitTemplateReveal template={view.template} onBack={() => setView({ mode: "picker" })} />
-      )}
+      {closetMode ? <WearTodayFromCloset /> : <WearTodayTemplates />}
     </PageShell>
   );
 }

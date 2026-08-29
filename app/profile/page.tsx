@@ -12,6 +12,7 @@ import { listFitChecksByUser, getUserFitStats } from "@/lib/repositories/fitChec
 import { getStreakForCurrentUser } from "@/lib/repositories/streaksRepo";
 import { listSavedOutfitsForCurrentUser } from "@/lib/repositories/outfitsRepo";
 import { listSavedOutfits } from "@/lib/repositories/generatedOutfitsRepo";
+import { milestoneFor } from "@/components/StreakBadge";
 
 // Per-user data behind auth cookies — always render per request.
 export const dynamic = "force-dynamic";
@@ -93,6 +94,12 @@ export default async function ProfilePage() {
           </div>
         ))}
       </section>
+
+      {streak && milestoneFor(streak.current_streak) && (
+        <p className="mt-3 text-xs uppercase tracking-[0.2em] text-accent-500">
+          🔥 {milestoneFor(streak.current_streak)}-day milestone — keep it going
+        </p>
+      )}
 
       <section className="mt-12">
         <p className="mb-4 text-xs uppercase tracking-[0.2em] text-accent-500">Fit Check History</p>

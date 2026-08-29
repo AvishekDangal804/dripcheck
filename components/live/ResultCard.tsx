@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import { TopThreeCelebration } from "@/components/live/TopThreeCelebration";
+import { StreakBadge } from "@/components/StreakBadge";
 import { CATEGORY_KEYS, CATEGORY_LABELS } from "@/types/fit-analysis";
 import { formatScore } from "@/lib/utils";
 import type { AnalyzeFitResult } from "@/hooks/useLiveCheckMachine";
@@ -60,12 +61,7 @@ export function ResultCard({ participantName, result, onNextFit }: ResultCardPro
       <TopThreeCelebration rank={leaderboard.rank} />
 
       {result.streak && result.streak.current > 0 && (
-        <div className="rounded-sm border border-accent-200 bg-accent-50 px-5 py-3 text-center">
-          <p className="text-xs uppercase tracking-[0.2em] text-accent-600">🔥 Fit Check Streak</p>
-          <p className="mt-1 font-display text-2xl text-accent-700">
-            {result.streak.current} day{result.streak.current === 1 ? "" : "s"}
-          </p>
-        </div>
+        <StreakBadge current={result.streak.current} longest={result.streak.longest} />
       )}
 
       <Button onClick={onNextFit} size="lg">
