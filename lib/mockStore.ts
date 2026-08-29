@@ -1,5 +1,6 @@
 import "server-only";
 import type { FitCheck, LeaderboardEntry, Outfit, RankedLeaderboardEntry, Streak } from "@/types/database";
+import type { ClosetItem, NewClosetItem } from "@/types/closet";
 
 // In-process fallback data store, used only when isSupabaseConfigured() is
 // false (lib/env.ts). Lets the whole app — leaderboard, Top 3, Discover —
@@ -70,6 +71,7 @@ interface MockDb {
   leaderboardEntries: LeaderboardEntry[];
   outfits: Outfit[];
   streaks: Record<string, Streak>;
+  closetItems: ClosetItem[];
 }
 
 const globalForMockStore = globalThis as unknown as { __dripcheckMockDb?: MockDb };
@@ -81,6 +83,7 @@ function getDb(): MockDb {
       leaderboardEntries: [],
       outfits: seedOutfits(),
       streaks: {},
+      closetItems: [],
     };
   }
   return globalForMockStore.__dripcheckMockDb;
@@ -147,5 +150,31 @@ export const mockStore = {
 
   getUserFitChecks(userId: string): FitCheck[] {
     return getDb().fitChecks.filter((fc) => fc.user_id === userId);
+  },
+
+  listCloset(userId: string): ClosetItem[] {
+    return getDb().closetItems.filter((item) => item.user_id === userId);
+  },
+
+  addClosetItem(item: NewClosetItem): ClosetItem {
+    const record: ClosetItem = { ...item, id: crypto.randomUUID(), created_at: new Date().toISOString() };
+    getDb().closetItems.unshift(record);
+    return record;
+  },
+
+  updateClosetItem(
+    id: string,
+    userId: string,
+    patch: Partial<Pick<ClosetItem, "name" | "category" | "color" | "style" | "pattern">>
+  ): ClosetItem {
+    const item = getDb().closetItems.find((i) => i.id === id && i.user_id === userId);
+    if (!item) throw new Error("Item not found.");
+    Object.assign(item, patch);
+    return item;
+  },
+
+  deleteClosetItem(id: string, userId: string): void {
+    const db = getDb();
+    db.closetItems = db.closetItems.filter((i) => !(i.id === id && i.user_id === userId));
   },
 };
