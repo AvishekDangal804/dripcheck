@@ -9,7 +9,7 @@ const COPY: Record<FramingStatus, string> = {
 
 export function FramingOverlay({ status }: { status: FramingStatus }) {
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-between p-6">
+    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-between p-6 pb-28">
       <span className="rounded-full bg-near-black/60 px-3 py-1 text-xs uppercase tracking-wide text-warm-white">
         Full Fit Check
       </span>

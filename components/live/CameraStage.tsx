@@ -41,11 +41,20 @@ export function CameraStage({ videoRef, phase, framingStatus, countdownCount, on
         {isFullscreen ? "Exit Full Screen" : "Full Screen"}
       </button>
 
-      {phase === "ready" && (
-        <div className="absolute inset-x-0 bottom-6 flex justify-center">
+      {/* Manual capture is always available while the camera is live — the
+          framing heuristic only *suggests* when you're well positioned, it
+          must never be the only way to take the shot (many webcams never
+          trip it). */}
+      {(phase === "framing" || phase === "ready") && (
+        <div className="absolute inset-x-0 bottom-6 flex flex-col items-center gap-2">
           <Button onClick={onConfirmReady} size="lg">
-            Perfect. Ready?
+            {phase === "ready" ? "Perfect — Take the Shot" : "Take the Shot"}
           </Button>
+          {phase === "framing" && (
+            <span className="rounded-full bg-near-black/60 px-3 py-1 text-[11px] uppercase tracking-wide text-warm-white/80">
+              Tap when you&rsquo;re in frame
+            </span>
+          )}
         </div>
       )}
     </div>
