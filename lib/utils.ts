@@ -5,8 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatScore(score: number): string {
-  return score.toFixed(1);
+export function formatScore(score: number | null | undefined): string {
+  return typeof score === "number" && Number.isFinite(score) ? score.toFixed(1) : "—";
 }
 
 export function formatTime(isoDate: string): string {
