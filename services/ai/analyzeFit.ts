@@ -3,7 +3,7 @@ import { z } from "zod";
 import { CATEGORY_KEYS, PARTIAL_CHECK_DISCLOSURE, type CategoryKey, type CategoryResult, type FitAnalysis } from "@/types/fit-analysis";
 import { computeOverallScore } from "@/lib/scoring";
 import { getAiProvider } from "@/services/ai/provider-registry";
-import type { RawAnalysis, VisibleHints } from "@/services/ai/types";
+import type { FitFrame, RawAnalysis, VisibleHints } from "@/services/ai/types";
 
 const categoryResultSchema = z.object({
   visible: z.boolean(),
@@ -21,13 +21,13 @@ const rawAnalysisSchema = z.object({
 
 // Enforces the one invariant nothing is allowed to violate, no matter what
 // a provider returns: a category that isn't visible NEVER carries a score.
-// This runs regardless of provider (real or mock) — see §18/19 of the
-// product brief this was built from.
+// This runs regardless of provider (real or mock) — see §8/9 of the product
+// brief this was built from.
 function normalizeCategory(raw: unknown): CategoryResult {
   const parsed = categoryResultSchema.safeParse(raw);
 
   if (!parsed.success) {
-    return { visible: false, confidence: 0, score: null, reason: "Not visible in this frame." };
+    return { visible: false, confidence: 0, score: null, reason: "Not visible in any frame." };
   }
 
   if (!parsed.data.visible || parsed.data.score == null) {
@@ -51,9 +51,11 @@ function normalize(raw: RawAnalysis): Pick<FitAnalysis, "categories" | "style" |
   return { categories, style, description, suggestions };
 }
 
-export async function analyzeFit(imageBase64: string, mimeType: string, hints?: VisibleHints): Promise<FitAnalysis> {
+export async function analyzeFit(frames: FitFrame[], hints?: VisibleHints): Promise<FitAnalysis> {
+  if (frames.length === 0) throw new Error("No frames provided for analysis.");
+
   const provider = getAiProvider();
-  const raw = await provider.analyze(imageBase64, mimeType, hints);
+  const raw = await provider.analyze(frames, hints);
   const { categories, style, description, suggestions } = normalize(raw);
 
   const { score, checkType } = computeOverallScore(categories);

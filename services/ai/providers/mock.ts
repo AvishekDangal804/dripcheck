@@ -1,5 +1,5 @@
 import { CATEGORY_KEYS, type CategoryKey, type CategoryResult } from "@/types/fit-analysis";
-import type { AiProvider, RawAnalysis, VisibleHints } from "@/services/ai/types";
+import type { AiProvider, FitFrame, RawAnalysis, VisibleHints } from "@/services/ai/types";
 
 const REASON_POOL: Record<CategoryKey, string[]> = {
   top: ["Clean silhouette with a relaxed fit.", "Good proportions for a layered look.", "Neutral tone keeps it versatile."],
@@ -26,12 +26,13 @@ function pick<T>(arr: T[], rand: () => number): T {
 }
 
 export const mockProvider: AiProvider = {
-  async analyze(imageBase64: string, _mimeType: string, hints?: VisibleHints): Promise<RawAnalysis> {
+  async analyze(frames: FitFrame[], hints?: VisibleHints): Promise<RawAnalysis> {
     // Small artificial delay so the cycling loading copy in the UI is
     // actually visible during a demo, rather than resolving instantly.
-    await new Promise((resolve) => setTimeout(resolve, 1800 + Math.random() * 700));
+    await new Promise((resolve) => setTimeout(resolve, 1400 + Math.random() * 600));
 
-    const seed = imageBase64.length + imageBase64.charCodeAt(Math.min(50, imageBase64.length - 1));
+    const first = frames[0]?.data ?? "seed";
+    const seed = first.length + first.charCodeAt(Math.min(50, first.length - 1));
     const rand = seededRandom(seed);
 
     const categories = {} as Record<CategoryKey, CategoryResult>;
@@ -52,7 +53,7 @@ export const mockProvider: AiProvider = {
             visible: false,
             confidence: 0.1 + rand() * 0.15,
             score: null,
-            reason: "Not clearly visible in this frame.",
+            reason: "Not clearly visible in any frame.",
           };
     }
 

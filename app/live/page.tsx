@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { PageShell } from "@/components/layout/PageShell";
 import { NameGate } from "@/components/live/NameGate";
 import { CameraStage } from "@/components/live/CameraStage";
@@ -9,28 +9,68 @@ import { ErrorState } from "@/components/live/ErrorStates";
 import { ResultCard } from "@/components/live/ResultCard";
 import { useCamera } from "@/hooks/useCamera";
 import { useFramingHeuristic } from "@/hooks/useFramingHeuristic";
-import { useCountdown } from "@/hooks/useCountdown";
+import { useScanSequence } from "@/hooks/useScanSequence";
 import { useLiveCheckMachine } from "@/hooks/useLiveCheckMachine";
 
-function captureFrame(video: HTMLVideoElement): string {
+// Frames are downscaled before upload so ~5 of them stay well under the API's
+// per-frame limit — but not so small that clothing detail is lost.
+const CAPTURE_MAX_WIDTH = 768;
+
+function captureFrame(video: HTMLVideoElement): string | null {
+  if (!video.videoWidth || !video.videoHeight) return null;
+
+  const scale = Math.min(1, CAPTURE_MAX_WIDTH / video.videoWidth);
   const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext("2d")?.drawImage(video, 0, 0);
-  return canvas.toDataURL("image/jpeg", 0.9);
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  // Draws the REAL video frame. The preview's CSS `scaleX(-1)` mirror is
+  // display-only and does not affect what drawImage reads, so the captured
+  // image is correctly oriented for the AI.
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.85);
 }
 
 export default function LivePage() {
   const machine = useLiveCheckMachine();
-  const { state } = machine;
+  const { state, submitScan, startScan } = machine;
   const camera = useCamera();
-  const framing = useFramingHeuristic(camera.videoRef, state.phase === "framing" || state.phase === "ready");
-  const countdownActive = state.phase === "countdown";
+  const framing = useFramingHeuristic(
+    camera.videoRef,
+    state.phase === "framing" || state.phase === "ready"
+  );
   const readyDispatchedRef = useRef(false);
+  const framingHintRef = useRef<Record<string, boolean>>({});
+
+  // Hold onto the most recent framing read so it can be sent alongside the
+  // captured frames when the scan finishes.
+  useEffect(() => {
+    framingHintRef.current = { ...framing.hints } as Record<string, boolean>;
+  }, [framing.hints]);
+
+  // Plain function on purpose — useScanSequence keeps the latest reference in
+  // a ref, so this doesn't need to be memoized (and memoizing it trips the
+  // React Compiler over the ref.current access).
+  const grabFrame = (): string | null => {
+    const video = camera.videoRef.current;
+    return video ? captureFrame(video) : null;
+  };
+
+  const handleScanComplete = useCallback(
+    (frames: string[]) => {
+      submitScan(frames, state.participantName, "live", framingHintRef.current);
+    },
+    [submitScan, state.participantName]
+  );
+
+  const scan = useScanSequence(state.phase === "scanning", grabFrame, handleScanComplete);
 
   // Request the camera when entering requesting-camera, but skip re-asking
-  // permission if the stream is already open from a previous fit (§51:
-  // "NEXT FIT" should not force a fresh permission prompt mid-showcase).
+  // permission if the stream is already open from a previous fit — "NEXT
+  // FIT" should not force a fresh permission prompt mid-showcase.
   useEffect(() => {
     if (state.phase !== "requesting-camera") return;
 
@@ -63,15 +103,6 @@ export default function LivePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [framing.status, state.phase]);
 
-  const countdownCount = useCountdown(
-    3,
-    () => {
-      const video = camera.videoRef.current;
-      if (video) machine.submitCapture(captureFrame(video), state.participantName, "live");
-    },
-    countdownActive
-  );
-
   if (state.phase === "name-entry") {
     return (
       <PageShell>
@@ -84,7 +115,9 @@ export default function LivePage() {
     return (
       <PageShell>
         <UploadFallback
-          onImageSelected={(dataUrl) => machine.submitCapture(dataUrl, state.participantName || "Guest", "upload")}
+          onImageSelected={(dataUrl) =>
+            submitScan([dataUrl], state.participantName || "Guest", "upload")
+          }
         />
       </PageShell>
     );
@@ -120,7 +153,7 @@ export default function LivePage() {
     return (
       <PageShell>
         <ErrorState
-          title="We couldn't analyze your fit right now."
+          title="Fit analysis failed."
           message={state.errorMessage ?? "Please try again."}
           primaryLabel="Try Again"
           onPrimary={machine.retry}
@@ -156,10 +189,16 @@ export default function LivePage() {
     <PageShell className="py-10">
       <CameraStage
         videoRef={camera.videoRef}
-        phase={state.phase === "requesting-camera" ? "framing" : (state.phase as "framing" | "ready" | "countdown" | "analyzing")}
+        phase={
+          state.phase === "requesting-camera"
+            ? "framing"
+            : (state.phase as "framing" | "ready" | "scanning" | "analyzing")
+        }
         framingStatus={framing.status}
-        countdownCount={countdownCount}
-        onConfirmReady={machine.startCountdown}
+        scanProgress={scan.progress}
+        scanStageLabel={scan.stage.label}
+        scanStageHint={scan.stage.hint}
+        onStartScan={startScan}
       />
     </PageShell>
   );

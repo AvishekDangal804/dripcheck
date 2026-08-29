@@ -1,7 +1,7 @@
 import "server-only";
 import { GoogleGenAI } from "@google/genai";
 import { FIT_ANALYSIS_SYSTEM_PROMPT } from "@/services/ai/prompt";
-import type { AiProvider, RawAnalysis } from "@/services/ai/types";
+import type { AiProvider, FitFrame, RawAnalysis } from "@/services/ai/types";
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
@@ -15,18 +15,22 @@ function getClient(): GoogleGenAI {
 }
 
 export const geminiProvider: AiProvider = {
-  async analyze(imageBase64: string, mimeType: string): Promise<RawAnalysis> {
+  async analyze(frames: FitFrame[]): Promise<RawAnalysis> {
+    if (frames.length === 0) throw new Error("No frames to analyze.");
+
+    const parts: Array<
+      { text: string } | { inlineData: { mimeType: string; data: string } }
+    > = [{ text: FIT_ANALYSIS_SYSTEM_PROMPT }];
+
+    frames.forEach((frame, i) => {
+      parts.push({ text: `Frame ${i + 1} of ${frames.length} — ${frame.view} view:` });
+      parts.push({ inlineData: { mimeType: frame.mimeType, data: frame.data } });
+    });
+
     const response = await getClient().models.generateContent({
       model: GEMINI_MODEL,
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: FIT_ANALYSIS_SYSTEM_PROMPT }, { inlineData: { mimeType, data: imageBase64 } }],
-        },
-      ],
-      config: {
-        responseMimeType: "application/json",
-      },
+      contents: [{ role: "user", parts }],
+      config: { responseMimeType: "application/json" },
     });
 
     const text = response.text;

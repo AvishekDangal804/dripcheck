@@ -17,7 +17,7 @@ type Phase =
   | "no-camera"
   | "framing"
   | "ready"
-  | "countdown"
+  | "scanning"
   | "analyzing"
   | "result"
   | "analysis-error"
@@ -27,7 +27,7 @@ type Phase =
 interface State {
   phase: Phase;
   participantName: string;
-  capturedImage: string | null;
+  capturedFrames: string[];
   result: AnalyzeFitResult | null;
   errorMessage: string | null;
 }
@@ -39,8 +39,8 @@ type Action =
   | { type: "NO_CAMERA" }
   | { type: "USE_UPLOAD_INSTEAD" }
   | { type: "FRAMING_READY" }
-  | { type: "COUNTDOWN_STARTED" }
-  | { type: "CAPTURED"; imageDataUrl: string }
+  | { type: "SCAN_STARTED" }
+  | { type: "CAPTURED"; frames: string[] }
   | { type: "ANALYSIS_SUCCESS"; result: AnalyzeFitResult }
   | { type: "ANALYSIS_FAILED"; message: string }
   | { type: "DB_FAILED"; message: string }
@@ -50,7 +50,7 @@ type Action =
 const initialState: State = {
   phase: "name-entry",
   participantName: "",
-  capturedImage: null,
+  capturedFrames: [],
   result: null,
   errorMessage: null,
 };
@@ -69,10 +69,10 @@ function reducer(state: State, action: Action): State {
       return { ...state, phase: "upload-fallback" };
     case "FRAMING_READY":
       return { ...state, phase: "ready" };
-    case "COUNTDOWN_STARTED":
-      return { ...state, phase: "countdown" };
+    case "SCAN_STARTED":
+      return { ...state, phase: "scanning" };
     case "CAPTURED":
-      return { ...state, phase: "analyzing", capturedImage: action.imageDataUrl };
+      return { ...state, phase: "analyzing", capturedFrames: action.frames };
     case "ANALYSIS_SUCCESS":
       return { ...state, phase: "result", result: action.result };
     case "ANALYSIS_FAILED":
@@ -80,7 +80,7 @@ function reducer(state: State, action: Action): State {
     case "DB_FAILED":
       return { ...state, phase: "db-error", errorMessage: action.message };
     case "RETRY_FROM_FRAMING":
-      return { ...state, phase: "framing", capturedImage: null, errorMessage: null };
+      return { ...state, phase: "framing", capturedFrames: [], errorMessage: null };
     case "RESET":
       return initialState;
     default:
@@ -98,23 +98,32 @@ export function useLiveCheckMachine() {
   const onNoCamera = useCallback(() => dispatch({ type: "NO_CAMERA" }), []);
   const useUploadInstead = useCallback(() => dispatch({ type: "USE_UPLOAD_INSTEAD" }), []);
   const onFramingReady = useCallback(() => dispatch({ type: "FRAMING_READY" }), []);
-  const startCountdown = useCallback(() => dispatch({ type: "COUNTDOWN_STARTED" }), []);
+  const startScan = useCallback(() => dispatch({ type: "SCAN_STARTED" }), []);
   const retry = useCallback(() => dispatch({ type: "RETRY_FROM_FRAMING" }), []);
   const reset = useCallback(() => dispatch({ type: "RESET" }), []);
 
   // The single point of contact with the AI + database: exactly one POST
   // per completed fit check, guarded against React effect double-invoke.
-  const submitCapture = useCallback(
-    async (imageDataUrl: string, participantName: string, source: "live" | "upload") => {
+  const submitScan = useCallback(
+    async (
+      frames: string[],
+      participantName: string,
+      source: "live" | "upload",
+      framingHint?: Record<string, boolean>
+    ) => {
       if (inFlightRef.current) return;
+      if (frames.length === 0) {
+        dispatch({ type: "ANALYSIS_FAILED", message: "We couldn't capture a usable frame. Please try again." });
+        return;
+      }
       inFlightRef.current = true;
-      dispatch({ type: "CAPTURED", imageDataUrl });
+      dispatch({ type: "CAPTURED", frames });
 
       try {
         const res = await fetch("/api/analyze-fit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ participantName, imageDataUrl, source }),
+          body: JSON.stringify({ participantName, frames, source, framingHint }),
         });
 
         const body = await res.json();
@@ -135,7 +144,7 @@ export function useLiveCheckMachine() {
           // Storage can be unavailable (private browsing, etc.) — harmless to skip.
         }
       } catch {
-        dispatch({ type: "ANALYSIS_FAILED", message: "We couldn't analyze your fit right now." });
+        dispatch({ type: "ANALYSIS_FAILED", message: "Fit analysis failed. Please try again." });
       } finally {
         inFlightRef.current = false;
       }
@@ -151,8 +160,8 @@ export function useLiveCheckMachine() {
     onNoCamera,
     useUploadInstead,
     onFramingReady,
-    startCountdown,
-    submitCapture,
+    startScan,
+    submitScan,
     retry,
     reset,
   };
