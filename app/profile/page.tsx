@@ -12,6 +12,7 @@ import { listFitChecksByUser, getUserFitStats } from "@/lib/repositories/fitChec
 import { getStreakForCurrentUser } from "@/lib/repositories/streaksRepo";
 import { listSavedOutfitsForCurrentUser } from "@/lib/repositories/outfitsRepo";
 import { listSavedOutfits } from "@/lib/repositories/generatedOutfitsRepo";
+import { getMyProfile } from "@/lib/repositories/profileRepo";
 import { milestoneFor } from "@/components/StreakBadge";
 
 // Per-user data behind auth cookies — always render per request.
@@ -56,14 +57,22 @@ export default async function ProfilePage() {
     );
   }
 
-  const displayName = (data.user.user_metadata?.display_name as string | undefined) || data.user.email || "You";
-  const [history, saved, stats, streak, createdFits] = await Promise.all([
+  const [history, saved, stats, streak, createdFits, { profile }] = await Promise.all([
     listFitChecksByUser(data.user.id),
     listSavedOutfitsForCurrentUser(),
     getUserFitStats(data.user.id),
     getStreakForCurrentUser(),
     listSavedOutfits(data.user.id),
+    getMyProfile(),
   ]);
+
+  const displayName =
+    profile?.display_name ||
+    (data.user.user_metadata?.display_name as string | undefined) ||
+    data.user.email ||
+    "You";
+  const username = profile?.username ?? null;
+  const avatarUrl = profile?.avatar_url ?? null;
 
   const statCards: { label: string; value: string }[] = [
     { label: "Fit Checks", value: String(stats.total) },
@@ -77,13 +86,25 @@ export default async function ProfilePage() {
     <PageShell className="py-14 md:py-20">
       <div className="flex items-center justify-between gap-5">
         <div className="flex items-center gap-5">
-          <InitialsAvatar name={displayName} className="h-16 w-16 text-xl" />
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarUrl} alt={displayName} className="h-16 w-16 rounded-full object-cover" />
+          ) : (
+            <InitialsAvatar name={displayName} className="h-16 w-16 text-xl" />
+          )}
           <div>
             <p className="font-display text-2xl text-near-black">{displayName}</p>
-            <p className="text-sm text-near-black/50">{data.user.email}</p>
+            <p className="text-sm text-near-black/50">
+              {username ? `@${username}` : data.user.email}
+            </p>
           </div>
         </div>
-        <LogoutButton />
+        <div className="flex items-center gap-2">
+          <Button href="/profile/edit" variant="secondary" size="md">
+            Edit Profile
+          </Button>
+          <LogoutButton />
+        </div>
       </div>
 
       <section className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-5">

@@ -2,6 +2,7 @@ import type { FitAnalysis, CheckType } from "./fit-analysis";
 
 export interface Profile {
   id: string;
+  username: string | null;
   display_name: string | null;
   avatar_url: string | null;
   created_at: string;
