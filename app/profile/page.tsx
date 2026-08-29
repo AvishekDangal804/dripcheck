@@ -11,6 +11,9 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { listFitChecksByUser } from "@/lib/repositories/fitChecksRepo";
 import { listSavedOutfitsForCurrentUser } from "@/lib/repositories/outfitsRepo";
 
+// Per-user data behind auth cookies — always render per request.
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
   if (!isSupabaseConfigured()) {
     return (

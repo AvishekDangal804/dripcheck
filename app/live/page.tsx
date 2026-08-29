@@ -44,6 +44,13 @@ export default function LivePage() {
   );
   const readyDispatchedRef = useRef(false);
   const framingHintRef = useRef<Record<string, boolean>>({});
+  // "/live?mode=upload" (the Hero's "Upload a Fit" button) skips the camera
+  // entirely and goes straight to the Photo Check upload after the name gate.
+  const uploadModeRef = useRef(false);
+
+  useEffect(() => {
+    uploadModeRef.current = new URLSearchParams(window.location.search).get("mode") === "upload";
+  }, []);
 
   // Hold onto the most recent framing read so it can be sent alongside the
   // captured frames when the scan finishes.
@@ -73,6 +80,11 @@ export default function LivePage() {
   // FIT" should not force a fresh permission prompt mid-showcase.
   useEffect(() => {
     if (state.phase !== "requesting-camera") return;
+
+    if (uploadModeRef.current) {
+      machine.useUploadInstead();
+      return;
+    }
 
     if (camera.isActive) {
       machine.onCameraGranted();

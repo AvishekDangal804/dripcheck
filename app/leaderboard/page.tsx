@@ -5,6 +5,9 @@ import { RankedList } from "@/components/leaderboard/RankedList";
 import { YourRankBadge } from "@/components/leaderboard/YourRankBadge";
 import { getTodayLeaderboard } from "@/lib/repositories/leaderboardRepo";
 
+// Live standings — must be fetched fresh on every visit, never prerendered.
+export const dynamic = "force-dynamic";
+
 export default async function LeaderboardPage() {
   const entries = await getTodayLeaderboard();
   const top3 = entries.slice(0, 3);

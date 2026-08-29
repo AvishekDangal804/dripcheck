@@ -5,6 +5,9 @@ import { OutfitCard } from "@/components/discover/OutfitCard";
 import { listOutfits } from "@/lib/repositories/outfitsRepo";
 import { DISCOVER_TABS, type DiscoverTab } from "@/types/outfit";
 
+// Newly promoted outfits should show up without a redeploy.
+export const dynamic = "force-dynamic";
+
 function isDiscoverTab(value: string | undefined): value is DiscoverTab {
   return DISCOVER_TABS.some((tab) => tab.key === value);
 }
