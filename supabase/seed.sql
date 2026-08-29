@@ -1,8 +1,14 @@
 -- Optional sample data so Discover isn't empty on a fresh Supabase project.
+-- Safe to re-run: it first clears its own placeholder rows (never real
+-- submissions, which have a non-null fit_check_id and a real storage URL),
+-- then re-inserts the set.
+--
 -- image_url uses the "placeholder:<seed>" scheme — components/discover/
 -- OutfitCard.tsx renders these as a generated EditorialVisual instead of an
--- <img>, since these entries have no real photo. Real fit-check submissions
--- always carry an actual storage URL here instead.
+-- <img>, since these entries have no real photo.
+
+delete from outfits
+where fit_check_id is null and image_url like 'placeholder:%';
 
 insert into outfits (name, image_url, score, style, description) values
   ('Clean Streetwear', 'placeholder:streetwear', 9.1, 'Streetwear',
