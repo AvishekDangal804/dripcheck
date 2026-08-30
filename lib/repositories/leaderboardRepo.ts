@@ -31,7 +31,11 @@ export async function getTodayLeaderboard(): Promise<RankedLeaderboardEntry[]> {
     .select("*")
     .order("rank", { ascending: true });
 
-  if (error) throw new Error(`Failed to load leaderboard: ${error.message}`);
+  // Never let a leaderboard read failure white-screen Home / Leaderboard.
+  if (error) {
+    console.error("[leaderboard] read failed", error.message);
+    return [];
+  }
   return (data ?? []) as RankedLeaderboardEntry[];
 }
 

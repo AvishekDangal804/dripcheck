@@ -17,21 +17,26 @@ import { useLiveCheckMachine } from "@/hooks/useLiveCheckMachine";
 const CAPTURE_MAX_WIDTH = 768;
 
 function captureFrame(video: HTMLVideoElement): string | null {
-  if (!video.videoWidth || !video.videoHeight) return null;
+  try {
+    if (!video.videoWidth || !video.videoHeight) return null;
 
-  const scale = Math.min(1, CAPTURE_MAX_WIDTH / video.videoWidth);
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(video.videoWidth * scale);
-  canvas.height = Math.round(video.videoHeight * scale);
+    const scale = Math.min(1, CAPTURE_MAX_WIDTH / video.videoWidth);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
 
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
 
-  // Draws the REAL video frame. The preview's CSS `scaleX(-1)` mirror is
-  // display-only and does not affect what drawImage reads, so the captured
-  // image is correctly oriented for the AI.
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.85);
+    // Draws the REAL video frame. The preview's CSS `scaleX(-1)` mirror is
+    // display-only and does not affect what drawImage reads, so the captured
+    // image is correctly oriented for the AI.
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.85);
+  } catch (error) {
+    console.error("[live] frame capture failed", error);
+    return null;
+  }
 }
 
 export default function LivePage() {

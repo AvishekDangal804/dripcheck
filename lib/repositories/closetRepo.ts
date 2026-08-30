@@ -23,7 +23,12 @@ export async function listCloset(userId: string): Promise<ClosetItem[]> {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(`Failed to load closet: ${error.message}`);
+  // Missing table (migration 003 not run) — render an empty closet rather
+  // than crashing the page. Writes still surface their errors.
+  if (error) {
+    console.error("[closet] list failed", error.message);
+    return [];
+  }
   return (data ?? []) as ClosetItem[];
 }
 

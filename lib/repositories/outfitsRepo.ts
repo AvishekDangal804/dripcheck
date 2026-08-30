@@ -29,7 +29,10 @@ export async function listOutfits(tab: DiscoverTab): Promise<Outfit[]> {
   }
 
   const { data, error } = await getSupabaseAdminClient().from("outfits").select("*");
-  if (error) throw new Error(`Failed to load outfits: ${error.message}`);
+  if (error) {
+    console.error("[outfits] list failed", error.message);
+    return [];
+  }
   return sortForTab((data ?? []) as Outfit[], tab);
 }
 

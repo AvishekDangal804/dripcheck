@@ -48,7 +48,11 @@ export async function listSavedOutfits(userId: string): Promise<GeneratedOutfit[
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
-  if (error) throw new Error(`Failed to load saved fits: ${error.message}`);
+  // Missing table (migration 004 not run) — no saved fits rather than a crash.
+  if (error) {
+    console.error("[generated-outfits] list failed", error.message);
+    return [];
+  }
   if (!rows || rows.length === 0) return [];
 
   const { data: linkRows, error: linkError } = await admin

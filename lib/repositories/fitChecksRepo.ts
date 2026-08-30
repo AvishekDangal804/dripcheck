@@ -32,7 +32,10 @@ export async function listFitChecksByUser(userId: string): Promise<FitCheck[]> {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(`Failed to load fit check history: ${error.message}`);
+  if (error) {
+    console.error("[fit-checks] history read failed", error.message);
+    return [];
+  }
   return (data ?? []) as FitCheck[];
 }
 

@@ -16,7 +16,19 @@ export async function getMyProfile(): Promise<{ profile: Profile | null; email: 
     .select("*")
     .eq("id", userData.user.id)
     .maybeSingle();
-  if (error) throw new Error(`Failed to load profile: ${error.message}`);
+  if (error) {
+    console.error("[profile] read failed", error.message);
+    return {
+      profile: {
+        id: userData.user.id,
+        username: null,
+        display_name: (userData.user.user_metadata?.display_name as string | undefined) ?? null,
+        avatar_url: null,
+        created_at: new Date().toISOString(),
+      },
+      email: userData.user.email ?? null,
+    };
+  }
 
   // The signup trigger normally creates this row; self-heal if it's missing.
   if (!data) {

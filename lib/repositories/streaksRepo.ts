@@ -57,7 +57,12 @@ export async function getStreakForCurrentUser(): Promise<Streak | null> {
     .eq("user_id", userData.user.id)
     .maybeSingle();
 
-  if (error) throw new Error(`Failed to load streak: ${error.message}`);
+  // Missing table (migration 002 not run yet) or any read failure — treat as
+  // "no streak" rather than crashing the profile page.
+  if (error) {
+    console.error("[streaks] read failed", error.message);
+    return null;
+  }
   return (data as Streak) ?? null;
 }
 

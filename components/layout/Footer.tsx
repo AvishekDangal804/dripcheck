@@ -19,10 +19,12 @@ export function Footer() {
         </nav>
 
         <div className="text-sm text-near-black/60">
-          <p className="mb-2 uppercase tracking-wide text-near-black/40">Developers</p>
-          {DEVELOPERS.map((dev) => (
-            <p key={dev.name}>{dev.name}</p>
-          ))}
+          <p className="mb-3 uppercase tracking-wide text-near-black/40">Developers</p>
+          <div className="space-y-1.5">
+            {DEVELOPERS.map((dev) => (
+              <p key={dev.name}>{dev.name}</p>
+            ))}
+          </div>
         </div>
       </div>
     </footer>
